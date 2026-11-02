@@ -80,11 +80,10 @@
   function weekOf(n) { return WEEK_FULL[partsOf(n).wd]; }
   function weekShortOf(n) { return WEEK_SHORT[partsOf(n).wd]; }
 
-  /* 人名胶囊：窄屏（月历格子）只显示后两字，避免三字名被截断 */
-  function chipHTML(p, cls) {
-    const short = p.name.length > 2 ? p.name.slice(1) : p.name;
-    return `<span class="pchip${cls ? ' ' + cls : ''}" style="--h:${p.h}" title="${p.name}">` +
-      `<i class="pdot"></i><span class="p-full">${p.name}</span><span class="p-mini">${short}</span></span>`;
+  /* 人名：一个圆点 + 名字。颜色只做辅助，名字始终在（§5.7） */
+  function whoHTML(p, cls) {
+    return `<span class="who${cls ? ' ' + cls : ''}" style="--ph:${p.h}">` +
+      `<i class="dot"></i><span>${p.name}</span></span>`;
   }
 
   /* 写入 base_date.txt 的规范文本：26.11.1 / 26.11.1 张嘉诺 */
@@ -250,9 +249,8 @@
   /* ==================== 渲染：通用 ==================== */
 
   function applyTheme() {
+    /* 图标由 CSS 依 data-theme 切换，JS 不再改文本 */
     document.body.setAttribute('data-theme', ui.theme);
-    const btn = $('#btnTheme');
-    if (btn) btn.textContent = ui.theme === 'dark' ? '🌙' : '☀️';
   }
 
   function renderHead() {
@@ -269,6 +267,34 @@
     document.title = `今天 ${p.name} 值日 · 值日日历`;
   }
 
+  /* 读不到仓库文件、或正在用本机临时基准时，页面顶部给一条明确状态（§8.4 空/错状态） */
+  function renderNotice() {
+    const el = $('#stateNotice');
+    if (!el) return;
+    if (state.source === 'default') {
+      el.innerHTML =
+        `<div class="notice">
+          <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5.5"/><circle cx="12" cy="16.6" r=".9"/></svg>
+          <div>
+            <p>没读到 <b>base_date.txt</b>，现在按内置默认值 <b>26.11.1</b> 计算。用本地服务或 GitHub Pages 打开会读取仓库文件。</p>
+            <button type="button" class="notice-act" data-goto="settings">去设置看看</button>
+          </div>
+        </div>`;
+      return;
+    }
+    if (state.source === 'local' || state.source === 'url') {
+      el.innerHTML =
+        `<div class="notice">
+          <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5.5"/><circle cx="12" cy="16.6" r=".9"/></svg>
+          <div>
+            <p>正在用${state.source === 'url' ? '链接里的' : '本机临时'}基准 <b>${baseTextFull(state.base)}</b>（${PEOPLE[state.base.who].name} 起），还没同步到仓库。下载 <b>base_date.txt</b> 覆盖到仓库根目录即可让所有人看到。</p>
+            <button type="button" class="notice-act" data-goto="settings">去设置看看</button>
+          </div>
+        </div>`;
+      return;
+    }
+    el.innerHTML = '';
+  }
   /* ==================== 渲染：月历 ==================== */
 
   function renderCalendar() {
@@ -291,21 +317,18 @@
       const person = personOfDayNum(n);
       const cls = ['day'];
       if (p.m !== m) cls.push('other');
-      if (p.wd >= 5) cls.push('weekend');
+      
       if (n === today) cls.push('today');
       if (ui.me >= 0 && dutyOfDayNum(n) === ui.me) cls.push('mine');
 
-      const delta = n - baseNum();
-      const foot = delta === 0 ? '基准日' : (delta > 0 ? `距基准 +${delta} 天` : `距基准 ${delta} 天`);
+      const isMe = ui.me >= 0 && dutyOfDayNum(n) === ui.me;
 
       html.push(
-        `<button type="button" class="${cls.join(' ')}" data-day="${n}" style="--mh:${person.h}" ` +
-        `title="${p.y}-${pad2(p.m + 1)}-${pad2(p.d)} ${weekOf(n)} · ${person.name}">` +
-          `<span class="d-top"><span class="d-num">${p.d}</span>` +
-            (n === today ? '<span class="d-tag">今天</span>' : '') +
-          `</span>` +
-          `${chipHTML(person)}` +
-          `<span class="d-foot">${foot}</span>` +
+        `<button type="button" class="${cls.join(' ')}" data-day="${n}" style="--ph:${person.h}"` +
+        (n === today ? ' aria-current="date"' : '') +
+        ` aria-label="${p.m + 1} 月 ${p.d} 日 ${weekOf(n)}，${person.name}值日">` +
+          `<span class="d-top"><span class="d-num">${p.d}</span>${n === today ? '<span class="d-today">今天</span>' : ''}</span>` +
+          `<span class="d-name"><span class="d-full" aria-hidden="true">${person.name}</span><span class="d-mini" aria-hidden="true">${person.name.length > 2 ? person.name.slice(1) : person.name}</span>${isMe ? '<span class="d-me"> · 我</span>' : ''}</span>` +
         `</button>`
       );
     }
@@ -315,11 +338,11 @@
     $('#monthTitle').textContent = `${y} 年 ${m + 1} 月`;
     const end = dayNum(y, m, daysInMonth);
     $('#monthRange').textContent =
-      `${mdShort(dayNum(y, m, 1))} ~ ${mdShort(end)} · ${daysInMonth} 天 · 每人约 ${(daysInMonth / CYCLE).toFixed(1)} 天`;
+      `${mdShort(dayNum(y, m, 1))} – ${mdShort(end)} · ${daysInMonth} 天`;
 
     const legend = $('#calLegend');
     legend.innerHTML = PEOPLE.map(p => (
-      `<span class="lg-item"><i class="lg-dot" style="--h:${p.h}"></i>${p.name}</span>`
+      `<span class="lg-item"><i class="lg-dot" style="--ph:${p.h}"></i>${p.name}</span>`
     )).join('') + '<span class="lg-hint">点任意一天看详情 / 可把该天设为新基准</span>';
 
     /* 月份下拉跟着当前月走 */
@@ -336,60 +359,36 @@
     const cs = partsOf(cycleStartOf(n));
     const ce = partsOf(cycleStartOf(n) + CYCLE - 1);
 
-    $('#todayDate').textContent = mdOf(n);
     $('#todayBody').innerHTML =
-      `<div class="duty-hero" style="--h:${person.h}">
-        <p class="dh-label">今天由谁值日</p>
-        <p class="dh-name">${person.name}</p>
-        <p class="dh-meta">${cnOf(n)} · ${weekOf(n)}</p>
+      `<div class="duty-who" style="--ph:${person.h}">
+        <i class="dot"></i>
+        <span class="duty-name">${person.name}</span>
       </div>
+      <p class="duty-meta">${cnOf(n)} · ${weekOf(n)}</p>
       <div class="kv">
         <div class="kv-row"><span>换人倒计时</span><span class="countdown" id="countdown">--:--:--</span></div>
         <div class="kv-row"><span>明天</span><span>${PEOPLE[nextIdx].name}</span></div>
-        <div class="kv-row"><span>本轮</span><span>${cs.m + 1}.${cs.d} ~ ${ce.m + 1}.${ce.d}</span></div>
+        <div class="kv-row"><span>本轮</span><span>${cs.m + 1}.${cs.d} – ${ce.m + 1}.${ce.d}</span></div>
       </div>`;
   }
 
   function renderNext() {
     const n = todayNum();
-    let html = '';
-
-    if (ui.me >= 0) {
-      const p = PEOPLE[ui.me];
-      const d = nextDutyFrom(n, ui.me);
-      const left = d - n;
-      html +=
-        `<div class="next-main">
-          <div class="next-name" style="color:hsl(${p.h} 80% 62%)">${p.name}（我）</div>
-          <div class="next-when">${left === 0 ? '就是今天' : `${cnOf(d)} · ${weekOf(d)}`}</div>
-        </div>
-        <div class="next-count">${left === 0 ? '今天' : '还有 ' + left + ' 天'}<small>下一次值日</small></div>`;
-    } else {
-      const d = n + 1;
-      const p = personOfDayNum(d);
-      html +=
-        `<div class="next-main">
-          <div class="next-name">${p.name}</div>
-          <div class="next-when">${cnOf(d)} · ${weekOf(d)} · 00:00 起</div>
-        </div>
-        <div class="next-count">明天<small>接棒</small></div>`;
-    }
-
     const items = [];
     for (let i = 1; i <= CYCLE; i++) {
       const d = n + i;
       const p = personOfDayNum(d);
+      const isMe = ui.me >= 0 && dutyOfDayNum(d) === ui.me;
       items.push(
-        `<div class="mini-row${i === 1 ? ' is-cur' : ''}">` +
+        `<div class="mini-row${i === 1 ? ' is-cur' : ''}" style="--ph:${p.h}">` +
           `<span class="mr-date">${mdShort(d)} ${weekShortOf(d)}</span>` +
-          `${chipHTML(p, 'sm')}` +
-          `<span class="muted" style="margin-left:auto;font-size:11.5px">${i === 1 ? '明天' : i + ' 天后'}</span>` +
+          `<i class="mr-dot"></i>` +
+          `<span class="mr-name">${p.name}${isMe ? ' · 我' : ''}</span>` +
+          `<span class="mr-right">${i === 1 ? '明天' : i + ' 天后'}</span>` +
         `</div>`
       );
     }
-    html += `<div class="mini-list" style="margin-top:12px">${items.join('')}</div>`;
-
-    $('#nextBody').innerHTML = html;
+    $('#nextBody').innerHTML = `<div class="mini-list" style="margin-top:0">${items.join('')}</div>`;
   }
 
   function renderSummary() {
@@ -399,11 +398,13 @@
     for (let i = 0; i < days; i++) counts[dutyOfDayNum(dayNum(y, m, 1) + i)]++;
     const max = Math.max.apply(null, counts.concat([1]));
 
-    $('#summaryBody').innerHTML = `<div class="mini-bars">` + PEOPLE.map((p, i) => (
+    const box = $('#summaryBody');
+    if (!box) return;   /* 该卡片已从日历页移除，数据只在「统计」里出现 */
+    box.innerHTML = `<div class="mini-bars">` + PEOPLE.map((p, i) => (
       `<div class="mb-row">
         <span class="mb-name">${p.name}</span>
-        <span class="mb-track"><i class="mb-fill" style="--h:${p.h};width:${(counts[i] / max) * 100}%"></i></span>
-        <span class="mb-val">${counts[i]} 天</span>
+        <span class="mb-track"><i class="mb-fill" style="--ph:${p.h};width:${(counts[i] / max) * 100}%"></i></span>
+        <span class="mb-val">${counts[i]}</span>
       </div>`
     )).join('') + `</div>`;
   }
@@ -421,8 +422,8 @@
         `<div class="agenda-row${isToday ? ' is-today' : ''}">` +
           `<span class="ar-date">${isoOf(d)}${isToday ? ' · 今天' : ''}</span>` +
           `<span class="ar-week">${weekShortOf(d)}</span>` +
-          `<span>${chipHTML(p)}</span>` +
-          `<span class="ar-meta right">${isToday ? '今天' : i + ' 天后'} · 本轮第 ${d - cycleStartOf(d) + 1}/${CYCLE} 天</span>` +
+          `${whoHTML(p)}` +
+          `<span class="ar-meta right">${isToday ? '今天' : i + ' 天后'}</span>` +
         `</div>`
       );
     }
@@ -457,25 +458,24 @@
 
     const max = Math.max.apply(null, counts.concat(nextCounts).concat([1]));
     $('#chartPeople').innerHTML = PEOPLE.map((p, i) =>
-      `<div class="mb-row" style="grid-template-columns:70px minmax(0,1fr) 46px 46px">
+      `<div class="mb-row">
         <span class="mb-name">${p.name}</span>
-        <span class="mb-track"><i class="mb-fill" style="--h:${p.h};width:${(counts[i] / max) * 100}%"></i></span>
+        <span class="mb-track"><i class="mb-fill" style="--ph:${p.h};width:${(counts[i] / max) * 100}%"></i></span>
         <span class="mb-val">${counts[i]} 天</span>
-        <span class="mb-val muted">${nextCounts[i]} 天</span>
       </div>`
     ).join('');
 
     $('#chartHint').textContent =
-      `左列 ${y} 年 ${m + 1} 月，右列 ${ny} 年 ${nm + 1} 月（灰字）。`;
+      `${y} 年 ${m + 1} 月 · 共 ${days} 天，每人约 ${(days / CYCLE).toFixed(1)} 天；下月（${nm + 1} 月）见下方明细。`;
 
     const trs = PEOPLE.map((p, i) => {
       const d = nextDutyFrom(n, i);
       return `<tr class="${d === n ? 'is-today' : ''}">
-        <td>${chipHTML(p, 'sm')}</td>
+        <td>${whoHTML(p)}</td>
         <td class="num">${counts[i]}</td>
         <td class="num">${nextCounts[i]}</td>
         <td>${isoOf(d)}</td>
-        <td>${d === n ? '今天' : `还有 ${d - n} 天`}</td>
+        <td class="num">${d === n ? '今天' : (d - n) + ' 天'}</td>
       </tr>`;
     }).join('');
 
@@ -519,8 +519,8 @@
       const d = nextDutyFrom(n, i);
       return `<div class="people-row">
         <span class="pr-no">${i + 1}</span>
-        ${chipHTML(p)}
-        <span class="pr-next">${d === n ? '今天值日' : `下次 ${mdShort(d)}（${d - n} 天后）`}</span>
+        ${whoHTML(p)}
+        <span class="pr-next">${d === n ? '今天值日' : `${mdShort(d)} · ${d - n} 天后`}</span>
       </div>`;
     }).join('');
 
@@ -532,7 +532,6 @@
     const btnClear = $('#btnClearOverride');
     if (btnClear) {
       btnClear.disabled = !state.override;
-      btnClear.style.opacity = state.override ? '' : '.5';
     }
 
     /* 基准前后各 3 天，确认规律 */
@@ -541,11 +540,11 @@
       const d = baseDay + i;
       const p = personOfDayNum(d);
       around.push(
-        `<div class="mini-row${i === 0 ? ' is-cur' : ''}">` +
-          `<span class="mr-date">${mdShort(d)}</span>` +
-          `<span class="muted" style="width:34px">${weekShortOf(d)}</span>` +
-          `${chipHTML(p, 'sm')}` +
-          `<span class="muted" style="margin-left:auto;font-size:11.5px">${i === 0 ? '基准日' : (i > 0 ? '+' + i : i)}</span>` +
+        `<div class="mini-row${i === 0 ? ' is-cur' : ''}" style="--ph:${p.h}">` +
+          `<span class="mr-date">${mdShort(d)} ${weekShortOf(d)}</span>` +
+          `<i class="mr-dot"></i>` +
+          `<span class="mr-name">${p.name}</span>` +
+          `<span class="mr-right">${i === 0 ? '基准日' : (i > 0 ? '+' + i : i)}</span>` +
         `</div>`
       );
     }
@@ -556,6 +555,7 @@
 
   function renderAll() {
     renderHead();
+    renderNotice();
     renderCalendar();
     renderToday();
     renderNext();
@@ -602,26 +602,29 @@
 
     $('#drawerTitle').textContent = `${p.y} 年 ${p.m + 1} 月 ${p.d} 日 · ${weekOf(n)}`;
     $('#drawerBody').innerHTML =
-      `<div class="detail-hero" style="--h:${person.h}">
-        <h3>${person.name}</h3>
-        <p>${isoOf(n)} · ${weekOf(n)}</p>
+      `<div>
+        <div class="duty-who" style="--ph:${person.h}">
+          <i class="dot"></i>
+          <span class="duty-name" style="font-size:24px">${person.name}</span>
+        </div>
+        <p class="duty-meta">${weekOf(n)} · ${isoOf(n)}</p>
       </div>
       <div class="detail-list">
         <div class="kv-row"><span>距今天</span><span>${delta === 0 ? '就是今天' : (delta > 0 ? `还有 ${delta} 天` : `${-delta} 天前`)}</span></div>
         <div class="kv-row"><span>距基准</span><span>${n - baseNum() === 0 ? '基准日' : (n - baseNum() > 0 ? '+' + (n - baseNum()) : n - baseNum()) + ' 天'}</span></div>
-        <div class="kv-row"><span>本轮日期</span><span>${mdOf(cs)} ~ ${mdOf(cs + CYCLE - 1)}</span></div>
+        <div class="kv-row"><span>本轮日期</span><span>${mdOf(cs)} – ${mdOf(cs + CYCLE - 1)}</span></div>
         <div class="kv-row"><span>下一位</span><span>${PEOPLE[mod(dutyOfDayNum(n) + 1, CYCLE)].name}</span></div>
       </div>
       <div>
         <p class="mini-title">前后 5 天</p>
-        <div class="mini-list" style="margin-top:8px">
+        <div class="mini-list" style="margin-top:0">
           ${[-2, -1, 0, 1, 2].map(i => {
             const d = n + i;
             const pp = personOfDayNum(d);
-            return `<div class="mini-row${i === 0 ? ' is-cur' : ''}">
-              <span class="mr-date">${mdShort(d)}</span>
-              <span class="muted" style="width:34px">${weekShortOf(d)}</span>
-              ${chipHTML(pp, 'sm')}
+            return `<div class="mini-row${i === 0 ? ' is-cur' : ''}" style="--ph:${pp.h}">
+              <span class="mr-date">${mdShort(d)} ${weekShortOf(d)}</span>
+              <i class="mr-dot"></i>
+              <span class="mr-name">${pp.name}</span>
             </div>`;
           }).join('')}
         </div>
@@ -674,12 +677,12 @@
       const d = n + i;
       const idx = mod(base.who + i, CYCLE);
       rows.push(`<div class="pv-line"><span class="pv-date">${mdShort(d)} ${weekShortOf(d)}</span>` +
-        `${chipHTML(PEOPLE[idx], 'sm')}` +
-        (i === 0 ? '<span class="muted">← 基准日</span>' : '') +
+        `${whoHTML(PEOPLE[idx])}` +
+        (i === 0 ? '<span class="muted">基准日</span>' : '') +
         `</div>`);
     }
     box.innerHTML = rows.join('') +
-      `<div class="muted" style="font-size:11.5px;margin-top:4px">之后每 ${CYCLE} 天回到 ${PEOPLE[base.who].name}</div>`;
+      `<div class="muted" style="margin-top:4px">之后每 ${CYCLE} 天回到 ${PEOPLE[base.who].name}</div>`;
   }
 
   function applyOverride(base, download) {
@@ -767,7 +770,7 @@
     const cur = ui.y * 12 + ui.m;
     if (!items.some(it => it.y * 12 + it.m === cur)) items.push({ y: ui.y, m: ui.m });
     items.sort((a, b) => (a.y * 12 + a.m) - (b.y * 12 + b.m));
-    sel.innerHTML = items.map(it => `<option value="${it.y}-${it.m}">${it.y} 年 ${it.m + 1} 月</option>`).join('');
+    sel.innerHTML = items.map(it => `<option value="${it.y}-${it.m}">${it.y}-${pad2(it.m + 1)}</option>`).join('');
     sel.value = `${ui.y}-${ui.m}`;
   }
 
@@ -834,6 +837,7 @@
     /* 抽屉 */
     $('#drawerClose').addEventListener('click', closeDrawer);
     $('#drawerMask').addEventListener('click', closeDrawer);
+    $('#drawerClose2').addEventListener('click', closeDrawer);
     $('#drawerSetBase').addEventListener('click', () => {
       if (drawerDay == null) return;
       const n = drawerDay;
@@ -903,6 +907,11 @@
       renderSettings();
     });
 
+    /* 状态条里的跳转 */
+    document.addEventListener('click', e => {
+      const act = e.target.closest && e.target.closest('.notice-act');
+      if (act) switchView(act.getAttribute('data-goto') || 'settings');
+    });
     /* 键盘：← → 翻月，t 回到今天，Esc 关浮层 */
     document.addEventListener('keydown', e => {
       if (e.target && /^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName)) return;
@@ -958,5 +967,14 @@
 
   setInterval(tick, 1000);
 })();
+
+
+
+
+
+
+
+
+
 
 

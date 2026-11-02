@@ -3,34 +3,52 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#0f1219">
+<meta name="theme-color" content="#0b0e14">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%236b5cf6'/%3E%3Ctext x='32' y='45' font-size='34' font-family='sans-serif' text-anchor='middle' fill='%23fff'%3E%E5%80%BC%3C/text%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23131a24'/%3E%3Ctext x='32' y='45' font-size='34' font-family='sans-serif' text-anchor='middle' fill='%23ebeef4'%3E%E5%80%BC%3C/text%3E%3C/svg%3E">
 <title>值日日历 · 六人轮值</title>
-<link rel="stylesheet" href="assets/style.css?v=1">
+<link rel="stylesheet" href="assets/style.css?v=2">
 </head>
 <body data-theme="dark">
 
+<!-- ============ 顶栏 ============ -->
 <header class="topbar">
   <div class="brand">
-    <span class="logo">值</span>
+    <span class="brand-mark" aria-hidden="true">值</span>
     <div class="brand-text">
       <h1>值日日历</h1>
       <p id="brandSub">六人轮值 · 6 天一轮</p>
     </div>
   </div>
 
-  <nav class="tabs" id="tabs">
-    <button class="tab active" data-view="calendar" data-ico="📅"><span class="tab-txt">日历</span></button>
-    <button class="tab" data-view="list" data-ico="🧾"><span class="tab-txt">轮值表</span></button>
-    <button class="tab" data-view="stats" data-ico="📊"><span class="tab-txt">统计</span></button>
-    <button class="tab" data-view="settings" data-ico="⚙️"><span class="tab-txt">设置</span></button>
+  <nav class="tabs" id="tabs" aria-label="视图切换">
+    <button class="tab active" data-view="calendar">
+      <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2.5"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
+      <span>日历</span>
+    </button>
+    <button class="tab" data-view="list">
+      <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h12M9 12h12M9 18h12"/><circle cx="4.5" cy="6" r="1.3"/><circle cx="4.5" cy="12" r="1.3"/><circle cx="4.5" cy="18" r="1.3"/></svg>
+      <span>轮值表</span>
+    </button>
+    <button class="tab" data-view="stats">
+      <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 20.5h17"/><path d="M7 20.5v-6M12 20.5V6M17 20.5v-9"/></svg>
+      <span>统计</span>
+    </button>
+    <button class="tab" data-view="settings">
+      <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h16M4 16h16"/><circle cx="9" cy="8" r="2.3"/><circle cx="15" cy="16" r="2.3"/></svg>
+      <span>设置</span>
+    </button>
   </nav>
 
   <div class="top-actions">
     <span class="base-badge" id="baseBadge" data-source="file" title="当前基准日">基准 —</span>
-    <button class="icon-btn" id="btnTheme" title="切换深浅色">🌙</button>
-    <button class="icon-btn" id="btnPrint" title="打印当前月">🖨</button>
+    <button class="icon-btn" id="btnTheme" title="切换深浅色" aria-label="切换深浅色">
+      <svg class="ico ico-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 14.2A8.6 8.6 0 1 1 9.8 3.5a7 7 0 0 0 10.7 10.7Z"/></svg>
+      <svg class="ico ico-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M4.8 4.8l1.4 1.4M17.8 17.8l1.4 1.4M2.5 12h2M19.5 12h2M4.8 19.2l1.4-1.4M17.8 6.2l1.4-1.4"/></svg>
+    </button>
+    <button class="icon-btn" id="btnPrint" title="打印当前月" aria-label="打印当前月">
+      <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 9V3.5h10V9"/><rect x="4" y="9" width="16" height="7.5" rx="2"/><path d="M7.5 14h9v6.5h-9z"/></svg>
+    </button>
   </div>
 </header>
 
@@ -39,18 +57,24 @@
   <!-- ================= 日历 ================= -->
   <section class="view active" id="view-calendar">
 
-    <div class="weekbar card">
-      <button class="week-nav" id="btnPrevMonth" title="上个月（←）">‹</button>
+    <div id="stateNotice"></div>
+
+    <div class="weekbar">
+      <button class="week-nav" id="btnPrevMonth" title="上个月（←）" aria-label="上个月">
+        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 6l-6 6 6 6"/></svg>
+      </button>
       <div class="week-label">
         <strong id="monthTitle">—</strong>
         <span id="monthRange">—</span>
       </div>
-      <button class="week-nav" id="btnNextMonth" title="下个月（→）">›</button>
+      <button class="week-nav" id="btnNextMonth" title="下个月（→）" aria-label="下个月">
+        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 6l6 6-6 6"/></svg>
+      </button>
 
       <div class="weekbar-spacer"></div>
 
-      <select id="monthSelect" class="select" title="跳到指定月份"></select>
-      <button class="btn ghost" id="btnToday">回到今天</button>
+      <select id="monthSelect" class="select" title="跳到指定月份" aria-label="跳到指定月份"></select>
+      <button class="btn secondary" id="btnToday">回到今天</button>
       <button class="btn primary" id="btnQuickReset">紧急重设基准</button>
     </div>
 
@@ -63,19 +87,16 @@
 
       <aside class="side">
         <div class="card" id="cardToday">
-          <h2 class="card-title">今日值日 <span class="badge" id="todayDate">—</span></h2>
+          <h2 class="card-title">今天值日</h2>
           <div id="todayBody"></div>
         </div>
 
         <div class="card" id="cardNext">
-          <h2 class="card-title">下一次</h2>
+          <h2 class="card-title" id="nextTitle">接下来 6 天</h2>
           <div id="nextBody"></div>
         </div>
 
-        <div class="card" id="cardSummary">
-          <h2 class="card-title">本月概览</h2>
-          <div id="summaryBody"></div>
-        </div>
+
       </aside>
     </div>
   </section>
@@ -83,22 +104,20 @@
   <!-- ================= 轮值表 ================= -->
   <section class="view" id="view-list">
     <div class="section-head">
-      <div>
-        <h2>轮值表</h2>
-        <p class="muted">从今天起连续 30 天，谁在哪天，一眼看完。</p>
-      </div>
+      <h2>轮值表</h2>
+      <p>从今天起连续 30 天，谁在哪天。</p>
     </div>
 
     <div class="card cal-card" style="margin-bottom:16px">
-      <div class="cal-legend" style="border-top:0;border-bottom:1px solid var(--border);border-radius:var(--radius) var(--radius) 0 0">
-        <span class="lg-item">30 天排班</span>
+      <div class="cal-legend" style="margin-top:12px;border-top:0">
+        <span class="lg-item">30 天</span>
         <span class="lg-hint">点日历里的某一天可以看详情，也可以把那天设为新基准</span>
       </div>
       <div class="agenda" id="agendaList"></div>
     </div>
 
     <div class="card">
-      <h2 class="card-title">轮值规则</h2>
+      <h2 class="card-title">轮值顺序</h2>
       <div class="people-list" id="rulePeople">
         <div class="people-row"><span class="pr-no">1</span><span>11.1 林才煜</span></div>
         <div class="people-row"><span class="pr-no">2</span><span>11.2 林润铮</span></div>
@@ -107,42 +126,42 @@
         <div class="people-row"><span class="pr-no">5</span><span>11.5 董国民</span></div>
         <div class="people-row"><span class="pr-no">6</span><span>11.6 马一辰</span></div>
       </div>
-      <p class="hint">每人 1 天，6 天一轮，循环不回退；名单顺序写在 <code>assets/app.js</code> 顶部的 <code>PEOPLE</code> 里。</p>
+      <p class="hint">每人 1 天，6 天一轮，循环不回退；名单顺序在 <code>assets/app.js</code> 顶部的 <code>PEOPLE</code> 里改。</p>
     </div>
   </section>
 
   <!-- ================= 统计 ================= -->
   <section class="view" id="view-stats">
     <div class="section-head">
-      <div>
-        <h2>统计</h2>
-        <p class="muted">本月 / 下月各人天数，和每个人的下一次值日。</p>
-      </div>
+      <h2>统计</h2>
+      <p>本月 / 下月各人天数，和每个人的下一次值日。</p>
     </div>
 
     <div class="stat-grid" id="statCards"></div>
 
-    <div class="card" style="margin-bottom:16px">
-      <h2 class="card-title">各人天数</h2>
-      <div class="mini-bars" id="chartPeople"></div>
-      <p class="hint" id="chartHint"></p>
-    </div>
+    <div class="layout two">
+      <div class="card">
+        <h2 class="card-title">各人天数</h2>
+        <div class="mini-bars" id="chartPeople"></div>
+        <p class="hint" id="chartHint"></p>
+      </div>
 
-    <div class="card">
-      <h2 class="card-title">明细</h2>
-      <div style="overflow:auto">
-        <table class="datatable">
+      <div class="card">
+        <h2 class="card-title">明细</h2>
+        <div style="overflow:auto">
+          <table class="datatable">
           <thead>
             <tr>
               <th>姓名</th>
               <th class="num">本月</th>
               <th class="num">下月</th>
               <th>下一次值日</th>
-              <th>还有</th>
+              <th class="num">还有</th>
             </tr>
           </thead>
           <tbody id="statsBody"></tbody>
-        </table>
+          </table>
+        </div>
       </div>
     </div>
   </section>
@@ -150,10 +169,8 @@
   <!-- ================= 设置 ================= -->
   <section class="view" id="view-settings">
     <div class="section-head">
-      <div>
-        <h2>设置</h2>
-        <p class="muted">基准日决定「谁从哪天开始」。放假打乱了节奏，就在这里重设。</p>
-      </div>
+      <h2>设置</h2>
+      <p>基准日决定「谁从哪天开始」。放假打乱了节奏，就在这里重设。</p>
     </div>
 
     <div class="layout two">
@@ -166,7 +183,7 @@
           <div class="kv-row"><span>今天值日</span><span id="setToday">—</span></div>
         </div>
         <p class="hint" id="setFileState">—</p>
-        <div class="form-actions" style="margin-top:12px">
+        <div class="form-actions" style="margin-top:16px">
           <button class="btn primary" id="btnOpenReset2">重设基准日</button>
           <button class="btn ghost" id="btnClearOverride">撤销本机临时基准</button>
         </div>
@@ -174,15 +191,13 @@
 
       <div class="card">
         <h2 class="card-title">仓库根目录 · base_date.txt</h2>
-        <p class="hint" style="margin-top:0">文件内容就一行，写基准日期；省略人名时按名单第 1 位（林才煜）起算。</p>
+        <p class="hint" style="margin-top:0">文件只有一行，写基准日期；省略人名时按名单第 1 位（林才煜）起算。</p>
         <div class="file-box" id="fileBox">—</div>
-        <div class="form-actions" style="margin-top:12px">
-          <button class="btn" id="btnCopyBase">复制文本</button>
-          <button class="btn" id="btnDownloadBase">下载 base_date.txt</button>
-          <button class="btn ghost" id="btnReloadFile">重新读取文件</button>
-        </div>
-        <div class="form-actions" style="margin-top:8px">
-          <button class="btn ghost" id="btnCopyGit">复制 git 推送命令</button>
+        <div class="form-actions" style="margin-top:16px">
+          <button class="btn secondary" id="btnDownloadBase">下载 base_date.txt</button>
+          <button class="btn ghost" id="btnCopyBase">复制文本</button>
+          <button class="btn ghost" id="btnReloadFile">重新读取</button>
+          <button class="btn ghost" id="btnCopyGit">复制 git 命令</button>
         </div>
         <p class="hint">
           两种写法都认：<code>26.11.1</code>（等于林才煜起算）、<code>26.11.1 张嘉诺</code>（张嘉诺起算）。
@@ -197,32 +212,31 @@
         <div class="people-list" id="peopleList"></div>
         <hr class="sep">
         <div class="form-row">
-          <label for="selectMe">标记「我」（日历里高亮我的天）</label>
+          <label for="selectMe">标记「我」</label>
           <select id="selectMe" class="input"></select>
         </div>
-        <p class="hint">改名单顺序或换人：编辑 <code>assets/app.js</code> 顶部的 <code>PEOPLE</code> 数组，保存即可。</p>
+        <p class="hint">标记后你的日子会加粗竖条，并显示「我」。改顺序或换人：编辑 <code>assets/app.js</code> 顶部的 <code>PEOPLE</code>。</p>
       </div>
 
       <div class="card">
         <h2 class="card-title">基准前后一览</h2>
-        <div class="mini-list" id="baseAround"></div>
+        <div class="mini-list" id="baseAround" style="margin-top:0"></div>
         <p class="hint">基准日之后的第 6 天，又回到基准日那个人。</p>
       </div>
     </div>
 
     <div class="card" style="margin-top:16px">
       <h2 class="card-title">放假 / 临时调整怎么做</h2>
-      <ol class="hint" style="margin:8px 0 0;padding-left:20px;line-height:1.9">
+      <ol class="hint" style="margin:8px 0 0;padding-left:20px">
         <li>点右上角或日历工具条上的「紧急重设基准」。</li>
-        <li>选一个日期，选这天由谁值日（默认自动跟随原轮值，不用改）。</li>
-        <li>「仅本机生效」→ 立刻重排日历，先自己用；「生效并下载 txt」→ 同时拿到 <code>base_date.txt</code>。</li>
-        <li>把下载的文件覆盖到仓库根目录，提交并推送，其他人刷新页面就跟上了。</li>
-        <li>万一搞错：点「撤销本机临时基准」，回到仓库文件的值；或者再重设一次。</li>
+        <li>选一个日期；「这天起由谁值日」默认自动跟随原轮值，顺延只改日期即可。</li>
+        <li>「仅本机生效」立刻重排日历；「生效并下载 txt」同时拿到 <code>base_date.txt</code>。</li>
+        <li>把下载的文件覆盖到仓库根目录，提交并推送，其他人刷新页面就跟上。</li>
+        <li>搞错了就点「撤销本机临时基准」，回到仓库文件的值。</li>
       </ol>
-      <p class="note-line">
+      <p class="hint" style="margin-top:16px">
         直接双击打开 <b>index.html</b>（<code>file://</code>）时，浏览器不允许读取同目录的 <code>.txt</code>，
-        这时程序用内置默认值（26.11.1）。想让它读仓库文件，用本地服务
-        （<code>python -m http.server</code>）或部署到 GitHub Pages 打开。
+        这时程序用内置默认值（26.11.1）。想让它读仓库文件，用本地服务（<code>python -m http.server</code>）或部署到 GitHub Pages 打开。
       </p>
     </div>
   </section>
@@ -231,14 +245,17 @@
 
 <!-- 日期详情抽屉 -->
 <div class="drawer-mask" id="drawerMask" hidden></div>
-<aside class="drawer" id="drawer" hidden>
+<aside class="drawer" id="drawer" hidden aria-labelledby="drawerTitle">
   <div class="drawer-head">
     <h2 id="drawerTitle">日期详情</h2>
-    <button class="icon-btn" id="drawerClose" title="关闭">✕</button>
+    <button class="icon-btn" id="drawerClose" title="关闭" aria-label="关闭">
+      <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
   </div>
   <div class="drawer-body" id="drawerBody"></div>
   <div class="drawer-foot">
-    <button class="btn ghost" id="drawerSetBase">设为基准日</button>
+    <button class="btn ghost" id="drawerClose2">关闭</button>
+    <button class="btn primary" id="drawerSetBase">设为基准日</button>
   </div>
 </aside>
 
@@ -247,7 +264,9 @@
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
     <div class="modal-head">
       <h2 id="modalTitle">紧急重设基准日</h2>
-      <button class="icon-btn" id="modalClose" title="关闭">✕</button>
+      <button class="icon-btn" id="modalClose" title="关闭" aria-label="关闭">
+        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
     </div>
     <form id="resetForm" class="modal-body" novalidate>
       <div class="modal-fields">
@@ -268,7 +287,7 @@
 
         <p class="scope-note">
           生效后日历立刻按新基准重排；<strong>把 txt 覆盖到仓库根目录后</strong>，别人打开页面也会同步。
-          默认已按原轮值自动跟随（这天本来是谁就还是谁），放假顺延只改日期即可。
+          默认已按原轮值自动跟随，放假顺延只改日期即可。
         </p>
 
         <p class="form-error" id="formError" hidden></p>
@@ -276,7 +295,7 @@
 
       <div class="modal-foot">
         <button type="button" class="btn ghost" id="modalCancel">取消</button>
-        <button type="button" class="btn" id="btnApplyOnly">仅本机生效</button>
+        <button type="button" class="btn secondary" id="btnApplyOnly">仅本机生效</button>
         <button type="submit" class="btn primary">生效并下载 txt</button>
       </div>
     </form>
@@ -285,6 +304,6 @@
 
 <div class="toast" id="toast" hidden></div>
 
-<script src="assets/app.js?v=1"></script>
+<script src="assets/app.js?v=2"></script>
 </body>
 </html>
